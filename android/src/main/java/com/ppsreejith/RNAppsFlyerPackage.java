@@ -16,8 +16,8 @@ import com.facebook.react.bridge.JavaScriptModule;
 public class RNAppsFlyerPackage implements ReactPackage {
     private final Application application;
 
-    public RNAppsFlyerPackage(Application application) {
-        this.application = application;
+    public RNAppsFlyerPackage(Application applicationObj) {
+        this.application = applicationObj;
     }
 
     @Override
