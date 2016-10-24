@@ -39,6 +39,11 @@ public class RNAppsFlyerModule extends ReactContextBaseJavaModule {
     public void init(final String appId, final String key, Callback methodCallback) {
 		AppsFlyerLib.getInstance().startTracking(this.application, key);
     }
+    
+    @ReactMethod
+    public void sendDeepLinkData(String url) {
+        AppsFlyerLib.getInstance().sendDeepLinkData(getCurrentActivity());
+    }
 
     @ReactMethod
     public void sendTrackingWithEvent(final String eventName, ReadableMap eventVariables, Callback methodCallback) {
