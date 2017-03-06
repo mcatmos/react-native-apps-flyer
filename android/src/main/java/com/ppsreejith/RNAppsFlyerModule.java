@@ -3,21 +3,26 @@ package com.ppsreejith;
 
 import android.app.Application;
 
-import com.appsflyer.*;
+import com.appsflyer.AppsFlyerLib;
 
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReadableMap;
-import java.util.HashMap;
+import com.facebook.react.bridge.ReadableMapKeySetIterator;
+import com.facebook.react.bridge.ReadableType;
+import com.facebook.react.bridge.ReadableArray;
+
 import java.util.Map;
-import android.util.Log;
+import java.util.HashMap;
+import java.util.List;
+import java.util.ArrayList;
 
 public class RNAppsFlyerModule extends ReactContextBaseJavaModule {
 
-    private ReactApplicationContext reactContext;
-    private Application application;
+    private final ReactApplicationContext reactContext;
+    private final Application application;
 
     public RNAppsFlyerModule(ReactApplicationContext reactContext, Application application) {
         super(reactContext);
@@ -30,56 +35,81 @@ public class RNAppsFlyerModule extends ReactContextBaseJavaModule {
         return "RNAppsFlyer";
     }
 
-    @Override
-    public Map<String, Object> getConstants() {
-        HashMap<String, Object> constants = new HashMap<String, Object>();
-        constants.put("ACHIEVEMENT_UNLOCKED", AFInAppEventType.ACHIEVEMENT_UNLOCKED);
-        constants.put("ADD_PAYMENT_INFO", AFInAppEventType.ADD_PAYMENT_INFO);
-        constants.put("ADD_TO_CART", AFInAppEventType.ADD_TO_CART);
-        constants.put("ADD_TO_WISH_LIST", AFInAppEventType.ADD_TO_WISH_LIST);
-        constants.put("COMPLETE_REGISTRATION", AFInAppEventType.COMPLETE_REGISTRATION);
-        constants.put("CONTENT_VIEW", AFInAppEventType.CONTENT_VIEW);
-        constants.put("INITIATED_CHECKOUT", AFInAppEventType.INITIATED_CHECKOUT);
-        constants.put("INVITE", AFInAppEventType.INVITE);
-        constants.put("LEVEL_ACHIEVED", AFInAppEventType.LEVEL_ACHIEVED);
-        constants.put("LOCATION_CHANGED", AFInAppEventType.LOCATION_CHANGED);
-        constants.put("LOCATION_COORDINATES", AFInAppEventType.LOCATION_COORDINATES);
-        constants.put("LOGIN", AFInAppEventType.LOGIN);
-        constants.put("OPENED_FROM_PUSH_NOTIFICATION", AFInAppEventType.OPENED_FROM_PUSH_NOTIFICATION);
-        constants.put("ORDER_ID", AFInAppEventType.ORDER_ID);
-        constants.put("PURCHASE", AFInAppEventType.PURCHASE);
-        constants.put("RATE", AFInAppEventType.RATE);
-        constants.put("RE_ENGAGE", AFInAppEventType.RE_ENGAGE);
-        constants.put("SEARCH", AFInAppEventType.SEARCH);
-        constants.put("SHARE", AFInAppEventType.SHARE);
-        constants.put("SPENT_CREDIT", AFInAppEventType.SPENT_CREDIT);
-        constants.put("TRAVEL_BOOKING", AFInAppEventType.TRAVEL_BOOKING);
-        constants.put("TUTORIAL_COMPLETION", AFInAppEventType.TUTORIAL_COMPLETION);
-        constants.put("UPDATE", AFInAppEventType.UPDATE);
-        return constants;
+    @ReactMethod
+    public void init(final String appId, final String key, Callback methodCallback) {
+		AppsFlyerLib.getInstance().startTracking(this.application, key);
+    }
+    
+    @ReactMethod
+    public void sendDeepLinkData(String url) {
+        AppsFlyerLib.getInstance().sendDeepLinkData(getCurrentActivity());
     }
 
     @ReactMethod
-    public void init(final String appId, final String key, Callback callback) {
-        AppsFlyerLib.getInstance().startTracking(application, key);
-        callback.invoke();
+    public void sendTrackingWithEvent(final String eventName, ReadableMap eventVariables, Callback methodCallback) {
+        AppsFlyerLib.getInstance().trackEvent(this.application, eventName, recursivelyDeconstructReadableMap(eventVariables));
     }
 
-    @ReactMethod
-    public void trackEvent(final String eventName, ReadableMap eventData, Callback callback) {
-        Map<String, Object> data = RNUtil.toMap(eventData);
-        AppsFlyerLib.getInstance().trackEvent(getReactApplicationContext(), eventName, data);
-        callback.invoke();
+    private Map<String, Object> recursivelyDeconstructReadableMap(ReadableMap readableMap) {
+        ReadableMapKeySetIterator iterator = readableMap.keySetIterator();
+        Map<String, Object> deconstructedMap = new HashMap<>();
+        while (iterator.hasNextKey()) {
+            String key = iterator.nextKey();
+            ReadableType type = readableMap.getType(key);
+            switch (type) {
+                case Null:
+                    deconstructedMap.put(key, null);
+                    break;
+                case Boolean:
+                    deconstructedMap.put(key, readableMap.getBoolean(key));
+                    break;
+                case Number:
+                    deconstructedMap.put(key, readableMap.getDouble(key));
+                    break;
+                case String:
+                    deconstructedMap.put(key, readableMap.getString(key));
+                    break;
+                case Map:
+                    deconstructedMap.put(key, recursivelyDeconstructReadableMap(readableMap.getMap(key)));
+                    break;
+                case Array:
+                    deconstructedMap.put(key, recursivelyDeconstructReadableArray(readableMap.getArray(key)));
+                    break;
+                default:
+                    throw new IllegalArgumentException("Could not convert object with key: " + key + ".");
+            }
+
+        }
+        return deconstructedMap;
     }
 
-    @ReactMethod
-    public void sendTrackingWithEvent(final String eventName) {
-        AppsFlyerLib.getInstance().trackEvent(getReactApplicationContext(), eventName, null);
-    }
-
-    @ReactMethod
-    public void getAppsFlyerUID(Callback callback) {
-        String appId = AppsFlyerLib.getInstance().getAppsFlyerUID(getReactApplicationContext());
-        callback.invoke(null, appId);
+    private List<Object> recursivelyDeconstructReadableArray(ReadableArray readableArray) {
+        List<Object> deconstructedList = new ArrayList<>(readableArray.size());
+        for (int i = 0; i < readableArray.size(); i++) {
+            ReadableType indexType = readableArray.getType(i);
+            switch(indexType) {
+                case Null:
+                    deconstructedList.add(i, null);
+                    break;
+                case Boolean:
+                    deconstructedList.add(i, readableArray.getBoolean(i));
+                    break;
+                case Number:
+                    deconstructedList.add(i, readableArray.getDouble(i));
+                    break;
+                case String:
+                    deconstructedList.add(i, readableArray.getString(i));
+                    break;
+                case Map:
+                    deconstructedList.add(i, recursivelyDeconstructReadableMap(readableArray.getMap(i)));
+                    break;
+                case Array:
+                    deconstructedList.add(i, recursivelyDeconstructReadableArray(readableArray.getArray(i)));
+                    break;
+                default:
+                    throw new IllegalArgumentException("Could not convert object at index " + i + ".");
+            }
+        }
+        return deconstructedList;
     }
 }

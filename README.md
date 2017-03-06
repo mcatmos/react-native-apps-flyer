@@ -1,6 +1,5 @@
 
 # react-native-apps-flyer
-This React Native Library uses the AppsFlyer 4.6.0 library for both iOS and Android
 
 ## Installation
 
@@ -14,70 +13,55 @@ This React Native Library uses the AppsFlyer 4.6.0 library for both iOS and Andr
 2. Go to `node_modules` ➜ `react-native-apps-flyer` and add `RNAppsFlyer.xcodeproj`
 3. In XCode, in the project navigator, select your project. Add `libRNAppsFlyer.a` to your project's `Build Phases` ➜ `Link Binary With Libraries`
 4. Install the appsFlyerFramework pod file from their website. Uncomment `use_frameworks!` in the Podfile.
-5. Run your project (`Cmd+R`)
+5. Run your project (`Cmd+R`)<
 
 #### Android
 
-##### MainApplication.java
-1. import `import com.ppsreejith.RNAppsFlyerPackage;`
-2. In the `getPackages()` method register the module `new RNAppsFlyerPackage(MainApplication.this)`
+1. In your MainApplication.java import `import com.ppsreejith.RNAppsFlyerPackage;`
+2. If you use an anonymous ReactNativeHost class create a field like this inside `private final Application application = MainApplication.this;`
+3. In the `getPackages()` method register the module `new RNAppsFlyerPackage(application)`
+4. Add the project to your **build.gradle** dependencies `compile project(':react-native-apps-flyer')`
+5. Add the project to your **settings.gradle**
 
-##### android/app/build.gradle
-1. Add the project to your dependencies
-```gradle
-dependencies {
-    ...
-    compile project(':react-native-apps-flyer')
-}
-```
+`include ':react-native-apps-flyer`
 
-##### android/settings.gradle
-1. Add the project
-```gradle
-include ':react-native-apps-flyer'
-project(':react-native-apps-flyer').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-apps-flyer/android')
-```
+`project(':react-native-apps-flyer').projectDir = new File(rootProject.projectDir, '../node_modules/react-native-apps-flyer/android')`
 
 ## Usage
 
+### ios
 ```javascript
 import af from 'react-native-apps-flyer';
 
-af.init(appId, devKey, function(err) {
-    
-});
+//To Initialize sdk using appId and devKey
+af.init(appId, devKey, function(err, events) {
+    //events is [appId, devKey] for now
 
-// To get appsFlyerUID,
-af.getAppsFlyerUID(function(err, uid) {
+    //To trigger an event,
+    af.sendTrackingWithEvent(eventName, {key1: value1, key2: value2}, function(err, events) {
+        //events is {key1: value1, key2, value2}
+    });
 
-});
+    // To get appsFlyerUID an event,
+    af.getAppsFlyerUID(function(err, uid) {
 
-//To trigger an event
-af.trackEvent(eventName, {key1: value1, key2: value2}, function(err, events) {
-    // events is {key1: value1, key2, value2}
-});
-```
+    });
 
-### iOS only
-```javascript
-import af from 'react-native-apps-flyer';
+    // To track location with lat and long * note lat and long should be floats only,
+    af.trackLocation(last, long, function(err, data) {
 
-
-// To track location with lat and long * note lat and long should be floats only,
-af.trackLocation(last, long, function(err, data) {
-
-});
+    });
 })
 ```
 
-# DEPRECATED
+### android
+
+The android module currently does not support callbacks and event values
+
 ```javascript
+import af from 'react-native-apps-flyer';
 
-// iOS
-af.sendTrackingWithEvent(eventName, {key1: value1, key2: value2}, function(err, events) {
-    // events is {key1: value1, key2, value2}
-});
-
-// Android
+//To Initialize sdk using appId and devKey
+af.init(appId, devKey);
 af.sendTrackingWithEvent(eventName);
 ```
